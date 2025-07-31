@@ -1,0 +1,47 @@
+#
+# QuantumArb 2.0 - Helm Chart Values for Market Replay Service
+#
+# File: infra/k8s/charts/market-replay-service/values.yaml
+#
+# Description:
+# Default configuration values for the market-replay-service chart.
+#
+
+# Default to 0 replicas. This service should only be scaled up when
+# a backtest or simulation is actively being run.
+replicaCount: 0
+
+image:
+  repository: 123456789012.dkr.ecr.us-east-1.amazonaws.com/market-replay-service
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+# This service typically doesn't need to be exposed via a Service, as it only
+# publishes to a message bus. We include a placeholder for consistency.
+service:
+  type: ClusterIP
+  port: 80
+
+# Resource usage depends on the size of the dataset being replayed.
+resources:
+  limits:
+    cpu: "500m"
+    memory: "512Mi"
+  requests:
+    cpu: "250m"
+    memory: "256Mi"
+
+# Standard Helm chart boilerplate
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+podAnnotations: {}
+podSecurityContext: {}
+securityContext: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}
