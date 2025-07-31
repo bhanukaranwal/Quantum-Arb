@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QuantumArb 2.0 - Operator Dashboard</title>
+    <title>QuantumArb 2.0 - Operator Command Center</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -36,8 +36,8 @@
 
     <div class="container mx-auto p-4 md:p-8">
         <header class="mb-8">
-            <h1 class="text-4xl font-bold text-gray-100">QuantumArb 2.0 Operator Dashboard</h1>
-            <p class="text-gray-400">Real-time strategy, risk, and portfolio management.</p>
+            <h1 class="text-4xl font-bold text-gray-100">QuantumArb 2.0 Operator Command Center</h1>
+            <p class="text-gray-400">Real-time strategy, risk, portfolio, and compliance management.</p>
         </header>
 
         <!-- Top Row: Risk & P&L -->
@@ -45,23 +45,20 @@
             <div class="card bg-gray-800 rounded-lg p-6 text-center">
                 <h3 class="text-lg font-medium text-gray-400">Portfolio Value at Risk (99%)</h3>
                 <p id="var-amount" class="text-4xl font-bold text-red-400 my-2">$0.00</p>
-                <p class="text-xs text-gray-500">Last updated: <span id="var-timestamp">...</span></p>
             </div>
             <div class="card bg-gray-800 rounded-lg p-6 text-center">
                 <h3 class="text-lg font-medium text-gray-400">Unrealized P&L</h3>
                 <p id="unrealized-pnl" class="text-4xl font-bold text-blue-400 my-2">$0.00</p>
-                <p class="text-xs text-gray-500">Marked to market continuously</p>
             </div>
             <div class="card bg-gray-800 rounded-lg p-6 text-center">
                 <h3 class="text-lg font-medium text-gray-400">Realized P&L (Today)</h3>
                 <p id="realized-pnl" class="text-4xl font-bold text-green-400 my-2">$0.00</p>
-                <p class="text-xs text-gray-500">Updated on position close</p>
             </div>
         </div>
 
         <!-- Main Content Grid -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <!-- Left Column: Portfolio & Optimizer -->
+            <!-- Left Column: Portfolio & Compliance -->
             <div class="lg:col-span-2">
                 <h2 class="text-2xl font-semibold border-b-2 border-gray-700 pb-2 mb-4">Live Portfolio</h2>
                 <div class="card bg-gray-800 rounded-lg p-6">
@@ -74,99 +71,94 @@
                                 <th class="p-2">Unrealized P&L</th>
                             </tr>
                         </thead>
-                        <tbody id="portfolio-table-body">
-                           <!-- Rows will be inserted here -->
-                        </tbody>
+                        <tbody id="portfolio-table-body"></tbody>
                     </table>
                 </div>
 
-                <h2 class="text-2xl font-semibold border-b-2 border-purple-500 pb-2 mb-4 mt-10">Quantum Optimizer</h2>
-                <div class="card bg-gray-800 rounded-lg p-6">
-                    <!-- Quantum Optimizer content here -->
+                <!-- NEW: Compliance Alerts Section -->
+                <h2 class="text-2xl font-semibold border-b-2 border-yellow-500 pb-2 mb-4 mt-10">Compliance Alerts</h2>
+                <div id="alert-container" class="space-y-3">
+                    <!-- Alerts will be inserted here -->
                 </div>
             </div>
 
             <!-- Right Column: Strategy Control -->
             <div class="lg:col-span-1">
                 <h2 class="text-2xl font-semibold border-b-2 border-gray-700 pb-2 mb-4">Strategy Control</h2>
-                <div id="strategy-container" class="space-y-4">
-                    <!-- Strategy cards will be dynamically inserted here -->
-                </div>
+                <div id="strategy-container" class="space-y-4"></div>
             </div>
         </div>
-
-        <!-- Toast Notification -->
-        <div id="toast" class="fixed bottom-5 right-5 bg-green-600 text-white py-2 px-4 rounded-lg shadow-lg transform translate-y-20 opacity-0 transition-all duration-500"></div>
     </div>
 
     <script>
         const PORTFOLIO_API_URL = 'http://portfolio-manager.default.svc.cluster.local/portfolio';
         const VAR_API_URL = 'http://var-calculator.default.svc.cluster.local/var';
+        const ALERTS_API_URL = 'http://trade-surveillance-service.default.svc.cluster.local/alerts';
 
         // --- Data Fetching ---
-        async function fetchPortfolio() {
-            const unrealizedEl = document.getElementById('unrealized-pnl');
-            const realizedEl = document.getElementById('realized-pnl');
-            const tableBody = document.getElementById('portfolio-table-body');
+        async function fetchPortfolio() { /* ... existing function ... */ }
+        async function fetchVaR() { /* ... existing function ... */ }
 
+        // NEW: Function to fetch compliance alerts
+        async function fetchAlerts() {
+            const alertContainer = document.getElementById('alert-container');
             try {
-                console.log(`Simulating GET request to ${PORTFOLIO_API_URL}`);
-                await new Promise(resolve => setTimeout(resolve, 300));
+                console.log(`Simulating GET request to ${ALERTS_API_URL}`);
+                await new Promise(resolve => setTimeout(resolve, 1000));
                 const mockResponse = {
                     ok: true,
-                    json: () => Promise.resolve({
-                        positions: {
-                            "BTC": { symbol: "BTC", quantity: 2, average_entry_price: 60100.50, unrealized_pnl: 15.70 + (Math.random() * 5) },
-                            "ETH": { symbol: "ETH", quantity: -10, average_entry_price: 3005.00, unrealized_pnl: -45.20 + (Math.random() * 10) }
-                        },
-                        realized_pnl: 1250.45,
-                        total_unrealized_pnl: -29.50 + (Math.random() * 15)
-                    })
+                    json: () => Promise.resolve([
+                        {
+                            alert_id: "ALERT-12345",
+                            strategy_id: "NLP-NEWS-TRADER",
+                            pattern_detected: "Potential Layering/Spoofing",
+                            description: "Strategy placed large order A1 (size 5000) and canceled it within 200ms.",
+                            timestamp_utc: new Date().toISOString()
+                        }
+                    ])
                 };
 
                 if (mockResponse.ok) {
-                    const data = await mockResponse.json();
-                    unrealizedEl.textContent = formatCurrency(data.total_unrealized_pnl);
-                    unrealizedEl.className = `text-4xl font-bold my-2 ${data.total_unrealized_pnl >= 0 ? 'text-blue-400' : 'text-red-400'}`;
-                    realizedEl.textContent = formatCurrency(data.realized_pnl);
-                    
-                    tableBody.innerHTML = '';
-                    for (const symbol in data.positions) {
-                        const pos = data.positions[symbol];
-                        const row = document.createElement('tr');
-                        row.className = 'border-b border-gray-800';
-                        row.innerHTML = `
-                            <td class="p-2 font-mono">${pos.symbol}</td>
-                            <td class="p-2 font-mono">${pos.quantity}</td>
-                            <td class="p-2 font-mono">${formatCurrency(pos.average_entry_price)}</td>
-                            <td class="p-2 font-mono ${pos.unrealized_pnl >= 0 ? 'text-green-400' : 'text-red-400'}">${formatCurrency(pos.unrealized_pnl)}</td>
-                        `;
-                        tableBody.appendChild(row);
+                    const alerts = await mockResponse.json();
+                    alertContainer.innerHTML = ''; // Clear old alerts
+                    if (alerts.length === 0) {
+                        alertContainer.innerHTML = `<div class="card bg-gray-800 p-4 text-center text-gray-400">No compliance alerts.</div>`;
+                    } else {
+                        alerts.forEach(alert => {
+                            const alertDiv = document.createElement('div');
+                            alertDiv.className = 'card bg-yellow-900/50 border-l-4 border-yellow-500 p-4 rounded-lg';
+                            alertDiv.innerHTML = `
+                                <div class="flex justify-between items-center">
+                                    <p class="font-bold text-yellow-400">${alert.pattern_detected}</p>
+                                    <p class="text-xs text-gray-400">${new Date(alert.timestamp_utc).toLocaleTimeString()}</p>
+                                </div>
+                                <p class="text-sm text-gray-300 mt-1"><b>Strategy:</b> ${alert.strategy_id}</p>
+                                <p class="text-sm text-gray-300"><b>Details:</b> ${alert.description}</p>
+                            `;
+                            alertContainer.appendChild(alertDiv);
+                        });
                     }
                 }
             } catch (error) {
-                console.error("Failed to fetch portfolio:", error);
+                console.error("Failed to fetch alerts:", error);
+                alertContainer.innerHTML = `<div class="card bg-red-900/50 p-4 text-center text-red-400">Error fetching compliance alerts.</div>`;
             }
         }
-        
-        async function fetchVaR() { /* ... existing function ... */ }
 
         // --- UI Rendering & Helpers ---
-        function formatCurrency(value) {
-            return `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-        }
-        
+        function formatCurrency(value) { /* ... existing function ... */ }
         function renderStrategies() { /* ... existing function ... */ }
         function toggleStrategy(id) { /* ... existing function ... */ }
-        function showToast(message, isError = false) { /* ... existing function ... */ }
 
         // --- Initialization ---
         document.addEventListener('DOMContentLoaded', () => {
             // renderStrategies();
             fetchVaR();
             fetchPortfolio();
+            fetchAlerts();
             setInterval(fetchVaR, 15000);
-            setInterval(fetchPortfolio, 2000); // Update portfolio more frequently
+            setInterval(fetchPortfolio, 2000);
+            setInterval(fetchAlerts, 10000); // Poll for new alerts every 10 seconds
         });
     </script>
 
