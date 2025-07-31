@@ -1,0 +1,4 @@
+Infrastructure as Code - TerraformThis directory contains all the Terraform configurations for provisioning the necessary infrastructure for QuantumArb 2.0. This includes cloud resources on AWS, as well as configurations for co-located hardware.Structure/aws: Contains modules for provisioning AWS resources such as VPCs, EC2 instances (including cluster placement groups), S3 buckets, and SageMaker environments./colo: Contains configurations for physical infrastructure in exchange co-location cages, such as server and network switch configurations./network: Manages the setup of the hybrid microwave and fiber optic network links.UsageTo apply the infrastructure changes, navigate to the relevant directory and run:terraform init
+terraform plan
+terraform apply
+Ensure you have the necessary cloud provider credentials configured in your environment.
