@@ -1,0 +1,73 @@
+# Compiled files and artifacts
+*.o
+*.so
+*.a
+*.dll
+*.exe
+*.out
+*.elf
+*.bin
+*.hex
+*.bit
+
+# Build directories
+build/
+dist/
+target/
+bin/
+obj/
+
+# Log files
+*.log
+
+# Environment files
+.env
+*.env.local
+.env.*.local
+
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*~
+.DS_Store
+
+# Python artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+*.egg-info/
+venv/
+env/
+
+# Terraform files
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.backup
+
+# FPGA project files
+*.xpr
+*.xci
+*.runs/
+*.srcs/
+*.cache/
+*.ip_user_files/
+*.hw/
+*.hwh/
+*.xsa/
+webtalk*.jou
+webtalk*.log
+
+# Node.js dependencies
+node_modules/
+npm-debug.log*
+yarn-error.log*
+package-lock.json
+
+# Secrets
+*.secret
+secrets.yml
