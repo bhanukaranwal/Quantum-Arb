@@ -1,0 +1,44 @@
+#
+# QuantumArb 2.0 - Helm Chart Values for Exchange Gateway
+#
+# File: infra/k8s/charts/exchange-gateway/values.yaml
+#
+# Description:
+# Default configuration values for the exchange-gateway chart.
+#
+
+# Run a dedicated gateway for each exchange connection for isolation and resilience.
+replicaCount: 1
+
+image:
+  repository: 123456789012.dkr.ecr.us-east-1.amazonaws.com/exchange-gateway
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+service:
+  type: ClusterIP
+  port: 80
+
+# This service is latency-critical and I/O bound.
+resources:
+  limits:
+    cpu: "1"
+    memory: "512Mi"
+  requests:
+    cpu: "1"
+    memory: "512Mi"
+
+# Standard Helm chart boilerplate
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+podAnnotations: {}
+podSecurityContext: {}
+securityContext: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}
