@@ -1,0 +1,136 @@
+{
+  "__inputs": [],
+  "__requires": [],
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": 1,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "gridPos": { "h": 2, "w": 24, "x": 0, "y": 0 },
+      "id": 10,
+      "options": {
+        "content": "# QuantumArb 2.0 - System Overview Dashboard",
+        "mode": "markdown"
+      },
+      "type": "text"
+    },
+    {
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 2 },
+      "id": 2,
+      "title": "Tick-to-Trade Latency (P99)",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "prom" },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(strategy_engine_tick_to_trade_latency_seconds_bucket[5m])) by (le)) * 1000000",
+          "legendFormat": "P99 Latency (µs)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "µs" }
+      }
+    },
+    {
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 2 },
+      "id": 4,
+      "title": "Order Throughput (per second)",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "prom" },
+      "targets": [
+        {
+          "expr": "sum(rate(exchange_gateway_orders_sent_total[1m])) by (exchange)",
+          "legendFormat": "{{exchange}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "ops" }
+      }
+    },
+    {
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 10 },
+      "id": 6,
+      "title": "Risk Gateway: Rejection Rate",
+      "type": "gauge",
+      "datasource": { "type": "prometheus", "uid": "prom" },
+      "targets": [
+        {
+          "expr": "(sum(rate(risk_gateway_orders_rejected_total[5m])) / sum(rate(risk_gateway_orders_processed_total[5m]))) * 100"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100
+        }
+      }
+    },
+    {
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 10 },
+      "id": 8,
+      "title": "Alt Data Events Processed",
+      "type": "stat",
+      "datasource": { "type": "prometheus", "uid": "prom" },
+      "targets": [
+        {
+          "expr": "sum(rate(data_bus_events_processed_total[5m])) by (source_type)",
+          "legendFormat": "{{source_type}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "eps" }
+      }
+    },
+    {
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 10 },
+      "id": 12,
+      "title": "WORM Logger Throughput",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "prom" },
+      "targets": [
+        {
+          "expr": "sum(rate(worm_logger_events_written_total[1m]))",
+          "legendFormat": "Events/sec"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "eps" }
+      }
+    }
+  ],
+  "schemaVersion": 36,
+  "style": "dark",
+  "tags": ["hft", "quantumarb"],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-15m",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "QuantumArb 2.0 - System Overview",
+  "uid": "quantumarb-overview",
+  "version": 1,
+  "weekStart": ""
+}
