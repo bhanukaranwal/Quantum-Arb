@@ -1,0 +1,46 @@
+#
+# QuantumArb 2.0 - Helm Chart Values for Trade Surveillance Service
+#
+# File: infra/k8s/charts/trade-surveillance-service/values.yaml
+#
+# Description:
+# Default configuration values for the trade-surveillance-service chart.
+#
+
+# This is a critical compliance service. Run multiple replicas for high availability.
+replicaCount: 2
+
+image:
+  repository: 123456789012.dkr.ecr.us-east-1.amazonaws.com/trade-surveillance-service
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 3033
+
+# This service is more memory-intensive than CPU-intensive due to storing
+# order history.
+resources:
+  limits:
+    cpu: "500m"
+    memory: "1Gi"
+  requests:
+    cpu: "250m"
+    memory: "512Mi"
+
+# Standard Helm chart boilerplate
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+podAnnotations: {}
+podSecurityContext: {}
+securityContext: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}
