@@ -1,0 +1,32 @@
+#
+# QuantumArb 2.0 - Helm Deployment Template for Trade Surveillance Service
+#
+# File: infra/k8s/charts/trade-surveillance-service/templates/deployment.yaml
+#
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "trade-surveillance-service.fullname" . }}
+  labels:
+    {{- include "trade-surveillance-service.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "trade-surveillance-service.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "trade-surveillance-service.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "trade-surveillance-service.serviceAccountName" . }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.targetPort }}
+              protocol: TCP
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
