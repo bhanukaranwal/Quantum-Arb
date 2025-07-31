@@ -1,0 +1,19 @@
+#
+# QuantumArb 2.0 - Helm Chart for Strategy Engine
+#
+# File: infra/k8s/charts/strategy-engine/Chart.yaml
+#
+# Description:
+# This file defines the metadata for the strategy-engine Helm chart.
+# It includes the chart's name, version, and a brief description.
+#
+apiVersion: v2
+name: strategy-engine
+description: A Helm chart for deploying the QuantumArb 2.0 Strategy Engine microservice.
+type: application
+
+# This is the chart version.
+version: 0.1.0
+
+# This is the version of the application being deployed.
+appVersion: "1.0.0"
