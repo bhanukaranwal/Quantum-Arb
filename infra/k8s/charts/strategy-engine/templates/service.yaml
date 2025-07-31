@@ -1,0 +1,27 @@
+#
+# QuantumArb 2.0 - Helm Service Template for Strategy Engine
+#
+# File: infra/k8s/charts/strategy-engine/templates/service.yaml
+#
+# Description:
+# This template generates the Kubernetes Service manifest for the strategy-engine.
+# A Service provides a stable network endpoint to access the pods managed by
+# the Deployment. Other services within the cluster can use the service's DNS
+# name (e.g., "strategy-engine.default.svc.cluster.local") to communicate
+# with it, regardless of individual pod IPs.
+#
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "strategy-engine.fullname" . }}
+  labels:
+    {{- include "strategy-engine.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "strategy-engine.selectorLabels" . | nindent 4 }}
