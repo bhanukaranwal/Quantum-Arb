@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuantumArb 2.0 - Operator Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .strategy-card {
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        .toggle-bg:after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            background: white;
+            border-radius: 9999px;
+            width: 20px;
+            height: 20px;
+            transition: all 0.3s ease;
+        }
+        input:checked + .toggle-bg:after {
+            transform: translateX(100%);
+            left: calc(100% - 22px);
+        }
+        input:checked + .toggle-bg {
+            background-color: #22c55e; /* green-500 */
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white">
+
+    <div class="container mx-auto p-4 md:p-8">
+        <header class="mb-8">
+            <h1 class="text-4xl font-bold text-gray-100">QuantumArb 2.0 Operator Dashboard</h1>
+            <p class="text-gray-400">Real-time strategy management and system control.</p>
+        </header>
+
+        <div id="strategy-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Strategy cards will be dynamically inserted here -->
+        </div>
+
+        <!-- Toast Notification -->
+        <div id="toast" class="fixed bottom-5 right-5 bg-green-600 text-white py-2 px-4 rounded-lg shadow-lg transform translate-y-20 opacity-0 transition-all duration-500">
+            Notification
+        </div>
+    </div>
+
+    <script>
+        const strategies = [
+            { id: 'BTC-USD-LSE-CME', name: 'BTC/USD Arbitrage (LSE/CME)', description: 'Cross-venue arbitrage for Bitcoin.', status: 'active' },
+            { id: 'ETH-FX-SATELLITE', name: 'ETH FX Satellite Algo', description: 'Uses satellite data to predict ETH price movements.', status: 'active' },
+            { id: 'NLP-NEWS-TRADER', name: 'NLP News Trader (S&P 500)', description: 'Trades S&P 500 based on news sentiment.', status: 'inactive' },
+            { id: 'QAOA-PORTFOLIO-OPT', name: 'Quantum Portfolio Optimizer', description: 'Experimental QAOA-based portfolio balancing.', status: 'inactive', isQuantum: true }
+        ];
+
+        const container = document.getElementById('strategy-container');
+
+        function renderStrategies() {
+            container.innerHTML = '';
+            strategies.forEach(strategy => {
+                const card = document.createElement('div');
+                card.className = `strategy-card bg-gray-800 rounded-lg p-6 flex flex-col justify-between border-l-4 ${strategy.status === 'active' ? 'border-green-500' : 'border-red-500'}`;
+                
+                const quantumBadge = strategy.isQuantum ? `<span class="text-xs font-medium mr-2 px-2.5 py-0.5 rounded bg-purple-900 text-purple-300">Quantum</span>` : '';
+
+                card.innerHTML = `
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                             <h2 class="text-xl font-semibold text-gray-200">${strategy.name}</h2>
+                             ${quantumBadge}
+                        </div>
+                        <p class="text-gray-400 mb-4">${strategy.description}</p>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm font-medium ${strategy.status === 'active' ? 'text-green-400' : 'text-red-400'}">
+                            Status: ${strategy.status.charAt(0).toUpperCase() + strategy.status.slice(1)}
+                        </span>
+                        <label for="toggle-${strategy.id}" class="flex items-center cursor-pointer">
+                            <div class="relative">
+                                <input type="checkbox" id="toggle-${strategy.id}" class="sr-only" ${strategy.status === 'active' ? 'checked' : ''} onchange="toggleStrategy('${strategy.id}')">
+                                <div class="toggle-bg block bg-gray-600 w-11 h-6 rounded-full"></div>
+                            </div>
+                        </label>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function toggleStrategy(id) {
+            const strategy = strategies.find(s => s.id === id);
+            if (strategy) {
+                strategy.status = strategy.status === 'active' ? 'inactive' : 'active';
+                console.log(`Simulating command: Set strategy ${id} to ${strategy.status}`);
+                showToast(`Strategy '${strategy.name}' set to ${strategy.status}.`);
+                renderStrategies();
+            }
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+                toast.classList.remove('translate-y-0', 'opacity-100');
+            }, 3000);
+        }
+
+        document.addEventListener('DOMContentLoaded', renderStrategies);
+    </script>
+
+</body>
+</html>
