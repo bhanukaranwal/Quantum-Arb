@@ -1,21 +1,15 @@
 /*
- * QuantumArb 2.0 - Core Services: Exchange Gateway
+ * QuantumArb 2.0 - Core Services: Exchange Gateway (Oracle Integrated)
  *
  * File: src/core_services/exchange_gateway/main.rs
  *
  * Description:
- * This microservice is responsible for managing direct connectivity to trading
- * venues. It abstracts the specific protocol (e.g., FIX 5.0, binary, WebSocket)
- * of an exchange from the rest of the system.
+ * This is the final, fully integrated version of the Exchange Gateway. It now
+ * queries the Latency Oracle before sending an order to dynamically select the
+ * fastest available network path (e.g., Microwave or Fiber).
  *
- * Its primary role is to:
- * 1. Maintain a persistent session with an exchange.
- * 2. Receive approved order requests from the internal system.
- * 3. Translate and send these orders to the exchange in the required format.
- * 4. Receive execution reports from the exchange and publish them back to the
- * internal message bus for consumption by the strategy and risk engines.
- *
- * This POC simulates managing a connection and processing an order lifecycle.
+ * This completes the core tick-to-trade path, incorporating dynamic routing
+ * for ultra-low-latency performance.
  *
  * To run (with a Cargo.toml file):
  * [dependencies]
@@ -23,10 +17,9 @@
  * serde = { version = "1.0", features = ["derive"] }
  * serde_json = "1.0"
  * uuid = { version = "1", features = ["v4"] }
- * chrono = "0.4"
+ * reqwest = "0.12"
  */
 
-use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use tokio::time::{self, Duration};
@@ -34,7 +27,6 @@ use uuid::Uuid;
 
 // --- Data Structures ---
 
-/// Represents an order approved by the risk gateway, ready for submission.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct InboundOrder {
     internal_order_id: Uuid,
@@ -44,7 +36,6 @@ struct InboundOrder {
     side: OrderSide,
 }
 
-/// Represents the status of an order sent to the exchange.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 enum OrderStatus {
     New,
@@ -61,7 +52,6 @@ enum OrderSide {
     Sell,
 }
 
-/// An execution report received from the exchange.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct ExecutionReport {
     exchange_order_id: String,
@@ -71,38 +61,74 @@ struct ExecutionReport {
     filled_price: u64,
 }
 
+// --- NEW: Structures for Latency Oracle ---
+#[derive(Debug, Deserialize, Copy, Clone)]
+enum NetworkPath {
+    Microwave,
+    Fiber,
+}
+
+#[derive(Debug, Deserialize)]
+struct OracleResponse {
+    path: NetworkPath,
+    latency_us: u32,
+}
+
+const LATENCY_ORACLE_URL: &str = "http://latency-oracle.default.svc.cluster.local/fastest-path";
+
+
 // --- Main Application Logic ---
 
 #[tokio::main]
 async fn main() {
-    println!("--- Starting QuantumArb 2.0 Exchange Gateway ---");
+    println!("--- Starting QuantumArb 2.0 Exchange Gateway (Oracle Integrated) ---");
 
-    // This would hold the state of all open orders managed by this gateway instance.
     let mut open_orders: HashMap<Uuid, InboundOrder> = HashMap::new();
+    let http_client = reqwest::Client::new();
 
     println!("Simulating connection to 'CME Group' exchange...");
-    // In a real app, a long-running task would manage the FIX/WebSocket session.
 
     let mut interval = time::interval(Duration::from_secs(4));
     loop {
         interval.tick().await;
 
-        // 1. Simulate receiving an approved order from the risk gateway.
         let inbound_order = generate_simulated_inbound_order();
         let order_id = inbound_order.internal_order_id;
         println!("\nReceived Inbound Order: ID {}", order_id);
 
-        // 2. Send the order to the "exchange".
-        send_order_to_exchange(&inbound_order);
+        // NEW: Query the latency oracle to get the fastest path
+        let fastest_path = get_fastest_path(&http_client).await.unwrap_or(NetworkPath::Fiber); // Default to Fiber on error
+
+        // Send the order to the "exchange" via the selected path
+        send_order_to_exchange(&inbound_order, fastest_path);
         open_orders.insert(order_id, inbound_order);
 
-        // 3. Simulate receiving an execution report back from the exchange.
         let exec_report = generate_simulated_execution_report(order_id);
         println!("  -> Received Execution Report: Status {:?}", exec_report.status);
 
-        // 4. Process the report and publish it internally.
         process_execution_report(&mut open_orders, &exec_report);
         publish_report_to_internal_bus(&exec_report);
+    }
+}
+
+/// NEW: Function to get the fastest path from the Latency Oracle.
+async fn get_fastest_path(client: &reqwest::Client) -> Option<NetworkPath> {
+    println!("  -> Querying Latency Oracle for fastest path...");
+    match client.get(LATENCY_ORACLE_URL).send().await {
+        Ok(response) => match response.json::<OracleResponse>().await {
+            Ok(oracle_response) => {
+                println!("  -> Oracle recommends: {:?} ({}µs)", oracle_response.path, oracle_response.latency_us);
+                Some(oracle_response.path)
+            }
+            Err(_) => {
+                println!("  -> Error parsing Oracle response.");
+                None
+            }
+        },
+        Err(_) => {
+            println!("  -> Failed to connect to Latency Oracle.");
+            None
+        }
     }
 }
 
@@ -110,19 +136,18 @@ async fn main() {
 fn generate_simulated_inbound_order() -> InboundOrder {
     InboundOrder {
         internal_order_id: Uuid::new_v4(),
-        instrument_symbol: "ESZ25".to_string(), // E-mini S&P 500 Future
-        price: 4500_25, // Price in ticks/cents
+        instrument_symbol: "ESZ25".to_string(),
+        price: 4500_25,
         size: 10,
         side: OrderSide::Buy,
     }
 }
 
-/// Simulates translating and sending the order over the wire.
-fn send_order_to_exchange(order: &InboundOrder) {
-    // In a FIX implementation, this would involve creating and sending a NewOrderSingle message.
+/// Simulates sending the order, now with path selection.
+fn send_order_to_exchange(order: &InboundOrder, path: NetworkPath) {
     println!(
-        "  -> Translating to FIX and sending to exchange: Symbol {}, Size {}",
-        order.instrument_symbol, order.size
+        "  -> Sending order via [{:?}] path: Symbol {}, Size {}",
+        path, order.instrument_symbol, order.size
     );
 }
 
@@ -142,16 +167,11 @@ fn process_execution_report(
     open_orders: &mut HashMap<Uuid, InboundOrder>,
     report: &ExecutionReport,
 ) {
-    // If the order is fully filled or rejected, remove it from the open orders map.
-    if report.status == OrderStatus::Filled
-        || report.status == OrderStatus::Canceled
-        || report.status == OrderStatus::RejectedByExchange
-    {
+    if report.status == OrderStatus::Filled || report.status == OrderStatus::Canceled {
         if open_orders.remove(&report.internal_order_id).is_some() {
             println!("  -> Order {} is now closed.", report.internal_order_id);
         }
     }
-    // A real implementation would handle partial fills by updating the remaining size.
 }
 
 /// Publishes the execution report to an internal topic for other services.
