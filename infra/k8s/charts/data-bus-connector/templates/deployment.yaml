@@ -1,0 +1,32 @@
+#
+# QuantumArb 2.0 - Helm Deployment Template for Data Bus Connector
+#
+# File: infra/k8s/charts/data-bus-connector/templates/deployment.yaml
+#
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "data-bus-connector.fullname" . }}
+  labels:
+    {{- include "data-bus-connector.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "data-bus-connector.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "data-bus-connector.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "data-bus-connector.serviceAccountName" . }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
