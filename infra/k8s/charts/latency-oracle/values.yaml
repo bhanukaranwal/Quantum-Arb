@@ -1,0 +1,45 @@
+#
+# QuantumArb 2.0 - Helm Chart Values for Latency Oracle
+#
+# File: infra/k8s/charts/latency-oracle/values.yaml
+#
+# Description:
+# Default configuration values for the latency-oracle chart.
+#
+
+replicaCount: 2 # Run two instances for high availability.
+
+image:
+  repository: 123456789012.dkr.ecr.us-east-1.amazonaws.com/latency-oracle
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+service:
+  type: ClusterIP
+  port: 80
+  # The service runs on port 3030 in the container
+  targetPort: 3030
+
+# This service is lightweight and not CPU-intensive.
+resources:
+  limits:
+    cpu: "250m"
+    memory: "128Mi"
+  requests:
+    cpu: "100m"
+    memory: "64Mi"
+
+# Standard Helm chart boilerplate
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+podAnnotations: {}
+podSecurityContext: {}
+securityContext: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}
