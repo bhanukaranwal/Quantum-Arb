@@ -1,0 +1,46 @@
+#
+# QuantumArb 2.0 - Helm Chart Values for Portfolio Manager
+#
+# File: infra/k8s/charts/portfolio-manager/values.yaml
+#
+# Description:
+# Default configuration values for the portfolio-manager chart.
+#
+
+# This is a critical service, but state is managed externally (e.g., Redis)
+# so we can run multiple replicas for high availability.
+replicaCount: 2
+
+image:
+  repository: 123456789012.dkr.ecr.us-east-1.amazonaws.com/portfolio-manager
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 3032
+
+# This service is stateful and performs continuous calculations.
+resources:
+  limits:
+    cpu: "1"
+    memory: "1Gi"
+  requests:
+    cpu: "500m"
+    memory: "512Mi"
+
+# Standard Helm chart boilerplate
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+podAnnotations: {}
+podSecurityContext: {}
+securityContext: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}
