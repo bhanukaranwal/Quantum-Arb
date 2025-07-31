@@ -1,0 +1,15 @@
+#
+# QuantumArb 2.0 - Helm Chart for Exchange Gateway
+#
+# File: infra/k8s/charts/exchange-gateway/Chart.yaml
+#
+# Description:
+# This file defines the metadata for the exchange-gateway Helm chart.
+#
+apiVersion: v2
+name: exchange-gateway
+description: A Helm chart for deploying the QuantumArb 2.0 Exchange Gateway microservice.
+type: application
+
+version: 0.1.0
+appVersion: "1.0.0"
