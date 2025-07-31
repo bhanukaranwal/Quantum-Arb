@@ -1,0 +1,30 @@
+#
+# QuantumArb 2.0 - Istio Service Mesh Security Policy
+#
+# File: infra/k8s/policies/strict-mtls.yaml
+#
+# Description:
+# This Istio manifest defines a `PeerAuthentication` policy to enforce strict
+# mutual TLS (mTLS) for all microservices in the 'default' namespace.
+#
+# By setting the `mtls.mode` to `STRICT`, we ensure that:
+# 1. All communication between services within the mesh MUST be encrypted.
+# 2. Services must present a valid, verifiable certificate to authenticate
+#    themselves before a connection is allowed.
+# 3. Any unencrypted (plaintext) traffic is automatically rejected.
+#
+# This policy is a cornerstone of a zero-trust network architecture and is
+# critical for securing a financial trading platform. It would be applied to
+# the cluster by the ArgoCD GitOps pipeline.
+#
+
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: "default-strict-mtls"
+  # Apply this policy to the entire 'default' namespace, where our services are deployed.
+  namespace: "default"
+spec:
+  # Enforce strict mutual TLS.
+  mtls:
+    mode: STRICT
