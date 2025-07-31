@@ -1,0 +1,28 @@
+#
+# QuantumArb 2.0 - Helm Deployment Template for Market Replay Service
+#
+# File: infra/k8s/charts/market-replay-service/templates/deployment.yaml
+#
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "market-replay-service.fullname" . }}
+  labels:
+    {{- include "market-replay-service.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "market-replay-service.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "market-replay-service.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "market-replay-service.serviceAccountName" . }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
