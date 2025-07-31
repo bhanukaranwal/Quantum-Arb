@@ -1,0 +1,105 @@
+#
+# QuantumArb 2.0 - GitHub Actions CI Pipeline for Rust Services
+#
+# File: .github/workflows/rust_ci.yml
+#
+# Description:
+# This workflow defines the Continuous Integration (CI) pipeline for the Rust-based
+# microservices in the `src/core_services` directory. It is triggered on every
+# push to the main branch or on any pull request.
+#
+# The pipeline performs the following steps:
+# 1. Checks out the code.
+# 2. Caches Rust dependencies to speed up builds.
+# 3. Runs format checks, static analysis (Clippy), and tests.
+# 4. Builds the application in release mode to ensure it compiles.
+#
+# A full production pipeline would also include steps for building and pushing
+# a Docker container to a registry like Amazon ECR.
+#
+
+name: Rust CI Pipeline
+
+# --- Trigger Conditions ---
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'src/core_services/**'
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'src/core_services/**'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-and-test:
+    name: Build & Test Rust Service
+    runs-on: ubuntu-latest
+
+    steps:
+      # --- 1. Checkout Code ---
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # --- 2. Setup Rust Environment & Cache ---
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - name: Cache Cargo dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      # --- 3. Run Quality Checks ---
+      - name: Check formatting
+        working-directory: ./src/core_services/strategy_engine
+        run: cargo fmt -- --check
+
+      - name: Run Clippy (Linter)
+        working-directory: ./src/core_services/strategy_engine
+        run: cargo clippy -- -D warnings
+
+      - name: Run tests
+        working-directory: ./src/core_services/strategy_engine
+        run: cargo test --verbose
+
+      # --- 4. Build Release Artifact ---
+      - name: Build release binary
+        working-directory: ./src/core_services/strategy_engine
+        run: cargo build --release --verbose
+
+      # --- 5. (Conceptual) Build and Push Docker Image ---
+      # In a full CD pipeline, the next steps would be to build a Docker image
+      # and push it to Amazon ECR. This requires setting up AWS credentials.
+      #
+      # - name: Configure AWS credentials
+      #   uses: aws-actions/configure-aws-credentials@v4
+      #   with:
+      #     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      #     aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      #     aws-region: us-east-1
+      #
+      # - name: Login to Amazon ECR
+      #   id: login-ecr
+      #   uses: aws-actions/amazon-ecr-login@v2
+      #
+      # - name: Build, tag, and push image to Amazon ECR
+      #   env:
+      #     ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+      #     ECR_REPOSITORY: strategy-engine
+      #     IMAGE_TAG: ${{ github.sha }}
+      #   run: |
+      #     docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+      #     docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
