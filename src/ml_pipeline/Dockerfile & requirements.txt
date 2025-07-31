@@ -1,0 +1,39 @@
+# File: src/ml_pipeline/Dockerfile
+#
+# Description:
+# This Dockerfile packages the Python-based inference server into a container image.
+# It installs dependencies, copies the application code and the trained model,
+# and configures the server to run.
+#
+
+# Use an official Python runtime as a parent image
+FROM python:3.11-slim
+
+# Set the working directory in the container
+WORKDIR /app
+
+# Copy the dependencies file to the working directory
+COPY requirements.txt .
+
+# Install any needed packages specified in requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the application code and the trained model into the container
+COPY ./inference_server.py .
+COPY ./xgb_price_predictor.json .
+
+# Make port 80 available to the world outside this container
+EXPOSE 80
+
+# Run inference_server.py when the container launches
+# Use uvicorn to run the FastAPI application
+CMD ["uvicorn", "inference_server:app", "--host", "0.0.0.0", "--port", "80"]
+
+---
+# File: src/ml_pipeline/requirements.txt
+fastapi
+uvicorn
+python-multipart
+xgboost
+pandas
+scikit-learn
