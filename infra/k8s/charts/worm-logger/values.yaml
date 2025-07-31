@@ -1,0 +1,44 @@
+#
+# QuantumArb 2.0 - Helm Chart Values for WORM Logger
+#
+# File: infra/k8s/charts/worm-logger/values.yaml
+#
+# Description:
+# Default configuration values for the worm-logger chart.
+#
+
+replicaCount: 2 # Run two instances for high availability to ensure no audit logs are ever dropped.
+
+image:
+  repository: 123456789012.dkr.ecr.us-east-1.amazonaws.com/worm-logger
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+service:
+  type: ClusterIP
+  port: 80
+
+# This service is I/O bound (writing to S3) rather than CPU bound.
+# Resource requests can be modest.
+resources:
+  limits:
+    cpu: "500m"
+    memory: "256Mi"
+  requests:
+    cpu: "250m"
+    memory: "128Mi"
+
+# Standard Helm chart boilerplate
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+podAnnotations: {}
+podSecurityContext: {}
+securityContext: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}
