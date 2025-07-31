@@ -1,0 +1,65 @@
+#
+# QuantumArb 2.0 - Helm Chart Values for Strategy Engine
+#
+# File: infra/k8s/charts/strategy-engine/values.yaml
+#
+# Description:
+# This file contains the default configuration values for the strategy-engine chart.
+# These values can be overridden during deployment to customize the service for
+# different environments (dev, staging, prod).
+#
+
+replicaCount: 1
+
+image:
+  # Replace with your container registry path
+  repository: 123456789012.dkr.ecr.us-east-1.amazonaws.com/strategy-engine
+  pullPolicy: IfNotPresent
+  # The image tag is often managed by the CI/CD pipeline
+  tag: "latest"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  type: ClusterIP
+  port: 80
+
+# For HFT, resource allocation is critical to prevent CPU jitter.
+# We request specific CPU cores to ensure our service gets dedicated processing time.
+resources:
+  limits:
+    cpu: "1"
+    memory: "512Mi"
+  requests:
+    cpu: "1"
+    memory: "512Mi"
+
+# Node selector ensures the pod is scheduled on nodes suitable for HFT.
+nodeSelector:
+  # Example: schedule on nodes with high-performance networking
+  # instance-type: c5n.large
+  role: "latency-critical"
+
+tolerations: []
+
+affinity: {}
