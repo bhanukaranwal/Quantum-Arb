@@ -1,0 +1,15 @@
+#
+# QuantumArb 2.0 - Helm Chart for Trade Surveillance Service
+#
+# File: infra/k8s/charts/trade-surveillance-service/Chart.yaml
+#
+# Description:
+# This file defines the metadata for the trade-surveillance-service Helm chart.
+#
+apiVersion: v2
+name: trade-surveillance-service
+description: A Helm chart for deploying the QuantumArb 2.0 Trade Surveillance Service.
+type: application
+
+version: 0.1.0
+appVersion: "1.0.0"
