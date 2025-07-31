@@ -1,0 +1,45 @@
+#
+# QuantumArb 2.0 - Helm Chart Values for VaR Calculator
+#
+# File: infra/k8s/charts/var-calculator/values.yaml
+#
+# Description:
+# Default configuration values for the var-calculator chart.
+#
+
+replicaCount: 1 # This is a computationally heavy service; run one and scale if needed.
+
+image:
+  repository: 123456789012.dkr.ecr.us-east-1.amazonaws.com/var-calculator
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 3031
+
+# Monte Carlo simulations are CPU-intensive. We need to allocate
+# significant resources to this service.
+resources:
+  limits:
+    cpu: "2"      # 2 full CPU cores
+    memory: "2Gi"
+  requests:
+    cpu: "1"      # Request at least 1 full CPU core
+    memory: "1Gi"
+
+# Standard Helm chart boilerplate
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+podAnnotations: {}
+podSecurityContext: {}
+securityContext: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}
