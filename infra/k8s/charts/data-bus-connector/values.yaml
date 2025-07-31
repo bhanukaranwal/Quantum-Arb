@@ -1,0 +1,44 @@
+#
+# QuantumArb 2.0 - Helm Chart Values for Data Bus Connector
+#
+# File: infra/k8s/charts/data-bus-connector/values.yaml
+#
+# Description:
+# Default configuration values for the data-bus-connector chart.
+#
+
+replicaCount: 2 # Run multiple instances for resilience against source API issues.
+
+image:
+  repository: 123456789012.dkr.ecr.us-east-1.amazonaws.com/data-bus-connector
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+service:
+  type: ClusterIP
+  port: 80
+
+# This service is less latency-critical than the trading path, so resource
+# requests can be more modest.
+resources:
+  limits:
+    cpu: "500m"
+    memory: "256Mi"
+  requests:
+    cpu: "250m"
+    memory: "128Mi"
+
+# Standard Helm chart boilerplate
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+podAnnotations: {}
+podSecurityContext: {}
+securityContext: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}
