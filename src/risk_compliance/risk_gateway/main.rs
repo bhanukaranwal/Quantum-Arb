@@ -1,34 +1,30 @@
 /*
- * QuantumArb 2.0 - Risk & Compliance: Risk Gateway
+ * QuantumArb 2.0 - Risk & Compliance: Risk Gateway (Redis Enhanced)
  *
  * File: src/risk_compliance/risk_gateway/main.rs
  *
  * Description:
- * This microservice acts as a centralized pre-trade risk gateway. It receives
- * order requests from the strategy engine and validates them against a more
-* complex set of rules than what is feasible on the FPGA.
- *
- * In a real system, this service would:
- * - Maintain a real-time state of account positions and exposure.
- * - Subscribe to a control plane to receive dynamic risk limit updates.
- * - Log every decision for audit and compliance purposes (e.g., to a WORM store).
- * - Communicate over a low-latency RPC framework like gRPC.
- *
- * This POC demonstrates the core validation logic.
+ * This is an enhanced version of the Risk Gateway microservice. It now integrates
+ * with Redis to manage account state in a fast, persistent, and scalable manner.
+ * This allows multiple replicas of the gateway to share a consistent view of
+ * risk exposure.
  *
  * To run (with a Cargo.toml file):
  * [dependencies]
  * tokio = { version = "1", features = ["full"] }
+ * redis = { version = "0.25", features = ["tokio-comp"] }
+ * serde = { version = "1.0", features = ["derive"] }
+ * serde_json = "1.0"
  * uuid = { version = "1", features = ["v4"] }
  */
 
-use std::collections::HashMap;
+use redis::AsyncCommands;
+use serde::{Deserialize, Serialize};
 use tokio::time::{self, Duration};
 use uuid::Uuid;
 
 // --- Data Structures ---
 
-/// Represents a trading order request to be validated.
 #[derive(Debug, Clone)]
 struct OrderRequest {
     order_id: Uuid,
@@ -39,71 +35,77 @@ struct OrderRequest {
     side: OrderSide,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 enum OrderSide {
     Buy,
     Sell,
 }
 
-/// Represents the current state and limits for a trading account.
-/// In a real system, this would be stored in a low-latency database like Redis or an in-memory store.
-#[derive(Debug)]
+/// Account state is now stored in Redis. This struct is used for serialization.
+#[derive(Debug, Serialize, Deserialize)]
 struct AccountState {
     account_id: u32,
-    // Total notional exposure (sum of position values)
     current_exposure: f64,
-    // Max allowed notional exposure
     max_exposure: f64,
-    // Max size for a single order
     max_order_size: u32,
-    // Positions held per instrument
-    positions: HashMap<u32, i64>, // Using i64 to handle long/short positions
 }
 
-/// The result of a risk check.
 #[derive(Debug, PartialEq)]
 enum RiskDecision {
     Approved,
-    Rejected(String), // Reason for rejection
+    Rejected(String),
 }
 
+const REDIS_URL: &str = "redis://127.0.0.1/";
 
 // --- Main Application Logic ---
 
 #[tokio::main]
 async fn main() {
-    println!("--- Starting QuantumArb 2.0 Risk Gateway ---");
+    println!("--- Starting QuantumArb 2.0 Risk Gateway (Redis Enhanced) ---");
 
-    // Initialize account state (in a real app, load from a persistent store)
-    let mut account = AccountState {
-        account_id: 101,
-        current_exposure: 50000.0,
-        max_exposure: 100000.0,
-        max_order_size: 100,
-        positions: HashMap::from([(1, 10), (2, -5)]), // Long 10 of instrument 1, short 5 of 2
-    };
+    // Connect to Redis
+    let client = redis::Client::open(REDIS_URL).expect("Invalid Redis URL");
+    let mut con = client.get_async_connection().await.expect("Failed to connect to Redis");
 
-    println!("Initial Account State: {:?}", account);
+    // Initialize account state in Redis if it doesn't exist
+    setup_initial_account_state(&mut con).await;
 
-    // --- Main Processing Loop ---
-    // This loop simulates receiving order requests to be validated.
     let mut interval = time::interval(Duration::from_secs(2));
     loop {
         interval.tick().await;
 
-        // Simulate an incoming order request from the strategy engine
         let order_request = generate_simulated_order();
         println!("\nReceived Order Request: {:?}", order_request);
 
-        // Perform the risk check
-        let decision = check_pre_trade_risk(&account, &order_request);
+        // Perform the risk check using data from Redis
+        let decision = check_pre_trade_risk(&mut con, &order_request).await;
         println!("  -> Risk Decision: {:?}", decision);
 
-        // If approved, update the account state to reflect the new pending order
+        // If approved, update the account state in Redis
         if decision == RiskDecision::Approved {
-            update_account_state(&mut account, &order_request);
-            println!("  -> Updated Account State: Exposure = ${:.2}", account.current_exposure);
+            update_account_state_in_redis(&mut con, &order_request).await;
+            println!("  -> Account state updated in Redis.");
         }
+    }
+}
+
+/// Sets up an initial account state in Redis for the POC.
+async fn setup_initial_account_state(con: &mut redis::aio::Connection) {
+    let account_id = 101;
+    let key = format!("account:{}", account_id);
+
+    let exists: bool = con.exists(&key).await.unwrap_or(false);
+    if !exists {
+        let initial_state = AccountState {
+            account_id,
+            current_exposure: 50000.0,
+            max_exposure: 100000.0,
+            max_order_size: 100,
+        };
+        let serialized_state = serde_json::to_string(&initial_state).unwrap();
+        let _: () = con.set(&key, serialized_state).await.unwrap();
+        println!("Initialized account {} in Redis.", account_id);
     }
 }
 
@@ -113,15 +115,25 @@ fn generate_simulated_order() -> OrderRequest {
         order_id: Uuid::new_v4(),
         account_id: 101,
         instrument_id: 1,
-        price: 60150_00, // $60,150.00
-        size: (rand::random::<u32>() % 150) + 1, // Random size up to 150
+        price: 60150_00,
+        size: (rand::random::<u32>() % 150) + 1,
         side: OrderSide::Buy,
     }
 }
 
-/// The core logic for checking pre-trade risk.
-fn check_pre_trade_risk(state: &AccountState, order: &OrderRequest) -> RiskDecision {
-    // 1. Check max order size
+/// The core logic for checking risk, now fetching state from Redis.
+async fn check_pre_trade_risk(
+    con: &mut redis::aio::Connection,
+    order: &OrderRequest,
+) -> RiskDecision {
+    let key = format!("account:{}", order.account_id);
+    let state_json: String = match con.get(&key).await {
+        Ok(val) => val,
+        Err(_) => return RiskDecision::Rejected("Account not found in Redis".to_string()),
+    };
+
+    let state: AccountState = serde_json::from_str(&state_json).unwrap();
+
     if order.size > state.max_order_size {
         return RiskDecision::Rejected(format!(
             "Order size {} exceeds max limit {}",
@@ -129,7 +141,6 @@ fn check_pre_trade_risk(state: &AccountState, order: &OrderRequest) -> RiskDecis
         ));
     }
 
-    // 2. Check max exposure
     let order_notional_value = (order.price as f64 / 100.0) * order.size as f64;
     let potential_new_exposure = state.current_exposure + order_notional_value;
 
@@ -140,22 +151,23 @@ fn check_pre_trade_risk(state: &AccountState, order: &OrderRequest) -> RiskDecis
         ));
     }
 
-    // Add other checks here (e.g., order frequency, symbol-specific limits, etc.)
-
     RiskDecision::Approved
 }
 
-/// Updates the account's state after an order is approved.
-/// This would be more complex in a real system, handling partial fills, cancellations, etc.
-fn update_account_state(state: &mut AccountState, order: &OrderRequest) {
+/// Updates the account's state in Redis after an order is approved.
+async fn update_account_state_in_redis(
+    con: &mut redis::aio::Connection,
+    order: &OrderRequest,
+) {
+    let key = format!("account:{}", order.account_id);
+    // In a real production system, you would use a WATCH/MULTI/EXEC transaction
+    // to prevent race conditions.
+    let state_json: String = con.get(&key).await.unwrap();
+    let mut state: AccountState = serde_json::from_str(&state_json).unwrap();
+
     let order_notional_value = (order.price as f64 / 100.0) * order.size as f64;
     state.current_exposure += order_notional_value;
 
-    let position_change = match order.side {
-        OrderSide::Buy => order.size as i64,
-        OrderSide::Sell => -(order.size as i64),
-    };
-
-    *state.positions.entry(order.instrument_id).or_insert(0) += position_change;
+    let updated_state_json = serde_json::to_string(&state).unwrap();
+    let _: () = con.set(&key, updated_state_json).await.unwrap();
 }
-
