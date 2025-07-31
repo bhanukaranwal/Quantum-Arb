@@ -1,0 +1,15 @@
+#
+# QuantumArb 2.0 - Helm Chart for Portfolio Manager
+#
+# File: infra/k8s/charts/portfolio-manager/Chart.yaml
+#
+# Description:
+# This file defines the metadata for the portfolio-manager Helm chart.
+#
+apiVersion: v2
+name: portfolio-manager
+description: A Helm chart for deploying the QuantumArb 2.0 Portfolio Manager microservice.
+type: application
+
+version: 0.1.0
+appVersion: "1.0.0"
