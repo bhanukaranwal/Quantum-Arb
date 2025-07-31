@@ -12,24 +12,6 @@
             transition: all 0.3s ease;
             box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
         }
-        .toggle-bg:after {
-            content: '';
-            position: absolute;
-            top: 2px;
-            left: 2px;
-            background: white;
-            border-radius: 9999px;
-            width: 20px;
-            height: 20px;
-            transition: all 0.3s ease;
-        }
-        input:checked + .toggle-bg:after {
-            transform: translateX(100%);
-            left: calc(100% - 22px);
-        }
-        input:checked + .toggle-bg {
-            background-color: #22c55e; /* green-500 */
-        }
     </style>
 </head>
 <body class="bg-gray-900 text-white">
@@ -40,25 +22,29 @@
             <p class="text-gray-400">Real-time strategy, risk, portfolio, and compliance management.</p>
         </header>
 
-        <!-- Top Row: Risk & P&L -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10">
+        <!-- Top Row: Key Metrics -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
             <div class="card bg-gray-800 rounded-lg p-6 text-center">
-                <h3 class="text-lg font-medium text-gray-400">Portfolio Value at Risk (99%)</h3>
-                <p id="var-amount" class="text-4xl font-bold text-red-400 my-2">$0.00</p>
+                <h3 class="text-sm font-medium text-gray-400">Portfolio VaR (99%)</h3>
+                <p id="var-amount" class="text-3xl font-bold text-red-400 my-2">$0.00</p>
             </div>
             <div class="card bg-gray-800 rounded-lg p-6 text-center">
-                <h3 class="text-lg font-medium text-gray-400">Unrealized P&L</h3>
-                <p id="unrealized-pnl" class="text-4xl font-bold text-blue-400 my-2">$0.00</p>
+                <h3 class="text-sm font-medium text-gray-400">Unrealized P&L</h3>
+                <p id="unrealized-pnl" class="text-3xl font-bold text-blue-400 my-2">$0.00</p>
             </div>
             <div class="card bg-gray-800 rounded-lg p-6 text-center">
-                <h3 class="text-lg font-medium text-gray-400">Realized P&L (Today)</h3>
-                <p id="realized-pnl" class="text-4xl font-bold text-green-400 my-2">$0.00</p>
+                <h3 class="text-sm font-medium text-gray-400">Realized P&L (Today)</h3>
+                <p id="realized-pnl" class="text-3xl font-bold text-green-400 my-2">$0.00</p>
+            </div>
+            <div class="card bg-gray-800 rounded-lg p-6 text-center">
+                <h3 class="text-sm font-medium text-gray-400">Dynamic Max Order Size</h3>
+                <p id="dynamic-limit" class="text-3xl font-bold text-orange-400 my-2">0</p>
             </div>
         </div>
 
         <!-- Main Content Grid -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <!-- Left Column: Portfolio & Compliance -->
+            <!-- Left Column: Portfolio & Complex Opportunities -->
             <div class="lg:col-span-2">
                 <h2 class="text-2xl font-semibold border-b-2 border-gray-700 pb-2 mb-4">Live Portfolio</h2>
                 <div class="card bg-gray-800 rounded-lg p-6">
@@ -75,90 +61,110 @@
                     </table>
                 </div>
 
-                <!-- NEW: Compliance Alerts Section -->
-                <h2 class="text-2xl font-semibold border-b-2 border-yellow-500 pb-2 mb-4 mt-10">Compliance Alerts</h2>
-                <div id="alert-container" class="space-y-3">
-                    <!-- Alerts will be inserted here -->
+                <!-- NEW: Complex Arbitrage Opportunities -->
+                <h2 class="text-2xl font-semibold border-b-2 border-cyan-500 pb-2 mb-4 mt-10">Graph Engine Opportunities</h2>
+                <div id="graph-opp-container" class="space-y-3">
+                    <div class="card bg-gray-800 p-4 text-center text-gray-400">Searching for complex arbitrage...</div>
                 </div>
             </div>
 
-            <!-- Right Column: Strategy Control -->
+            <!-- Right Column: Strategy Control & Compliance -->
             <div class="lg:col-span-1">
                 <h2 class="text-2xl font-semibold border-b-2 border-gray-700 pb-2 mb-4">Strategy Control</h2>
                 <div id="strategy-container" class="space-y-4"></div>
+                
+                <h2 class="text-2xl font-semibold border-b-2 border-yellow-500 pb-2 mb-4 mt-10">Compliance Alerts</h2>
+                <div id="alert-container" class="space-y-3"></div>
             </div>
         </div>
     </div>
 
     <script>
-        const PORTFOLIO_API_URL = 'http://portfolio-manager.default.svc.cluster.local/portfolio';
-        const VAR_API_URL = 'http://var-calculator.default.svc.cluster.local/var';
-        const ALERTS_API_URL = 'http://trade-surveillance-service.default.svc.cluster.local/alerts';
+        // API Endpoints (conceptual)
+        const PORTFOLIO_API_URL = '/api/portfolio';
+        const VAR_API_URL = '/api/var';
+        const ALERTS_API_URL = '/api/alerts';
+        const DYNAMIC_RISK_API_URL = '/api/dynamic-risk';
+        const GRAPH_OPP_API_URL = '/api/graph-opportunities';
 
-        // --- Data Fetching ---
+        // --- Data Fetching Functions ---
         async function fetchPortfolio() { /* ... existing function ... */ }
         async function fetchVaR() { /* ... existing function ... */ }
+        async function fetchAlerts() { /* ... existing function ... */ }
 
-        // NEW: Function to fetch compliance alerts
-        async function fetchAlerts() {
-            const alertContainer = document.getElementById('alert-container');
+        // NEW: Fetch dynamic risk limits
+        async function fetchDynamicLimits() {
+            const dynamicLimitEl = document.getElementById('dynamic-limit');
             try {
-                console.log(`Simulating GET request to ${ALERTS_API_URL}`);
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                console.log(`Simulating GET request to ${DYNAMIC_RISK_API_URL}`);
+                await new Promise(resolve => setTimeout(resolve, 400));
+                const mockResponse = {
+                    ok: true,
+                    json: () => Promise.resolve({ current_max_order_size: 75 })
+                };
+                const data = await mockResponse.json();
+                dynamicLimitEl.textContent = data.current_max_order_size;
+            } catch (error) {
+                dynamicLimitEl.textContent = 'N/A';
+            }
+        }
+
+        // NEW: Fetch graph engine opportunities
+        async function fetchGraphOpportunities() {
+            const container = document.getElementById('graph-opp-container');
+            try {
+                console.log(`Simulating GET request to ${GRAPH_OPP_API_URL}`);
+                await new Promise(resolve => setTimeout(resolve, 2000));
                 const mockResponse = {
                     ok: true,
                     json: () => Promise.resolve([
                         {
-                            alert_id: "ALERT-12345",
-                            strategy_id: "NLP-NEWS-TRADER",
-                            pattern_detected: "Potential Layering/Spoofing",
-                            description: "Strategy placed large order A1 (size 5000) and canceled it within 200ms.",
-                            timestamp_utc: new Date().toISOString()
+                            path: ["USD", "EUR", "JPY", "USD"],
+                            profit_ratio: 1.015
                         }
                     ])
                 };
-
-                if (mockResponse.ok) {
-                    const alerts = await mockResponse.json();
-                    alertContainer.innerHTML = ''; // Clear old alerts
-                    if (alerts.length === 0) {
-                        alertContainer.innerHTML = `<div class="card bg-gray-800 p-4 text-center text-gray-400">No compliance alerts.</div>`;
-                    } else {
-                        alerts.forEach(alert => {
-                            const alertDiv = document.createElement('div');
-                            alertDiv.className = 'card bg-yellow-900/50 border-l-4 border-yellow-500 p-4 rounded-lg';
-                            alertDiv.innerHTML = `
-                                <div class="flex justify-between items-center">
-                                    <p class="font-bold text-yellow-400">${alert.pattern_detected}</p>
-                                    <p class="text-xs text-gray-400">${new Date(alert.timestamp_utc).toLocaleTimeString()}</p>
-                                </div>
-                                <p class="text-sm text-gray-300 mt-1"><b>Strategy:</b> ${alert.strategy_id}</p>
-                                <p class="text-sm text-gray-300"><b>Details:</b> ${alert.description}</p>
-                            `;
-                            alertContainer.appendChild(alertDiv);
-                        });
-                    }
+                const opportunities = await mockResponse.json();
+                container.innerHTML = '';
+                if (opportunities.length === 0) {
+                     container.innerHTML = `<div class="card bg-gray-800 p-4 text-center text-gray-400">No complex arbitrage opportunities detected.</div>`;
+                } else {
+                    opportunities.forEach(opp => {
+                        const card = document.createElement('div');
+                        card.className = 'card bg-cyan-900/50 border-l-4 border-cyan-500 p-4 rounded-lg';
+                        card.innerHTML = `
+                            <p class="font-bold text-cyan-400">Triangular Arbitrage Detected</p>
+                            <p class="text-sm text-gray-300 mt-1"><b>Path:</b> ${opp.path.join(' -> ')}</p>
+                            <p class="text-sm text-gray-300"><b>Potential Profit:</b> ${((opp.profit_ratio - 1.0) * 100).toFixed(3)}%</p>
+                        `;
+                        container.appendChild(card);
+                    });
                 }
             } catch (error) {
-                console.error("Failed to fetch alerts:", error);
-                alertContainer.innerHTML = `<div class="card bg-red-900/50 p-4 text-center text-red-400">Error fetching compliance alerts.</div>`;
+                container.innerHTML = `<div class="card bg-red-900/50 p-4 text-center text-red-400">Error fetching graph opportunities.</div>`;
             }
         }
-
-        // --- UI Rendering & Helpers ---
-        function formatCurrency(value) { /* ... existing function ... */ }
+        
+        // --- UI Rendering & Helpers (conceptual) ---
+        function formatCurrency(value) { return `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`; }
         function renderStrategies() { /* ... existing function ... */ }
         function toggleStrategy(id) { /* ... existing function ... */ }
 
         // --- Initialization ---
         document.addEventListener('DOMContentLoaded', () => {
-            // renderStrategies();
+            // Initial data fetch
             fetchVaR();
             fetchPortfolio();
             fetchAlerts();
+            fetchDynamicLimits();
+            fetchGraphOpportunities();
+            
+            // Set up polling intervals
             setInterval(fetchVaR, 15000);
             setInterval(fetchPortfolio, 2000);
-            setInterval(fetchAlerts, 10000); // Poll for new alerts every 10 seconds
+            setInterval(fetchAlerts, 10000);
+            setInterval(fetchDynamicLimits, 15000);
+            setInterval(fetchGraphOpportunities, 30000); // Less frequent
         });
     </script>
 
