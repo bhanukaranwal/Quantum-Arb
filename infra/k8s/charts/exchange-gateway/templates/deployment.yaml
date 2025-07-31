@@ -1,0 +1,32 @@
+#
+# QuantumArb 2.0 - Helm Deployment Template for Exchange Gateway
+#
+# File: infra/k8s/charts/exchange-gateway/templates/deployment.yaml
+#
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "exchange-gateway.fullname" . }}
+  labels:
+    {{- include "exchange-gateway.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "exchange-gateway.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "exchange-gateway.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "exchange-gateway.serviceAccountName" . }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
