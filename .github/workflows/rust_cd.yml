@@ -1,0 +1,88 @@
+#
+# QuantumArb 2.0 - GitHub Actions CD Pipeline for Rust Services
+#
+# File: .github/workflows/rust_cd.yml
+#
+# Description:
+# This workflow defines the Continuous Deployment (CD) pipeline. It is designed
+# to run after the CI pipeline succeeds on the main branch.
+#
+# The pipeline performs the following steps:
+# 1. Builds a Docker image for the Rust service.
+# 2. Pushes the image to Amazon ECR.
+# 3. Configures kubectl to connect to the EKS cluster.
+# 4. Uses Helm to deploy the new version of the application.
+#
+# This requires a Dockerfile in the service's directory and AWS credentials
+# configured as secrets in the GitHub repository.
+#
+
+name: Rust CD Pipeline
+
+# --- Trigger Conditions ---
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'src/core_services/**'
+
+jobs:
+  # This job re-uses the CI logic from the other workflow.
+  # In a real project, you might use reusable workflows to avoid duplication.
+  build-and-test:
+    name: Build & Test
+    uses: ./.github/workflows/rust_ci.yml
+
+  deploy:
+    name: Deploy to EKS
+    runs-on: ubuntu-latest
+    needs: build-and-test # This job only runs if the 'build-and-test' job succeeds
+
+    steps:
+      # --- 1. Checkout Code ---
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # --- 2. Configure AWS Credentials ---
+      # This action configures credentials for accessing AWS services like ECR and EKS.
+      # The secrets must be configured in your GitHub repository settings.
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      # --- 3. Login to Amazon ECR ---
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # --- 4. Build and Push Docker Image ---
+      - name: Build, tag, and push image to Amazon ECR
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: strategy-engine
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          # Assumes a Dockerfile exists in this directory
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG ./src/core_services/strategy_engine
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+
+      # --- 5. Configure Kubectl for EKS ---
+      - name: Set up kubectl
+        uses: aws-actions/configure-aws-kubectl@v1
+        with:
+          cluster-name: QuantumArb-Cluster # Must match the name in eks.tf
+
+      # --- 6. Deploy to EKS using Helm ---
+      - name: Deploy with Helm
+        run: |
+          helm upgrade --install strategy-engine ./infra/k8s/charts/strategy-engine \
+            --namespace default \
+            --set image.repository=${{ steps.login-ecr.outputs.registry }}/strategy-engine \
+            --set image.tag=${{ github.sha }} \
+            --wait
+
