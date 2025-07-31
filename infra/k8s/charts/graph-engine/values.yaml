@@ -1,0 +1,45 @@
+#
+# QuantumArb 2.0 - Helm Chart Values for Graph Engine
+#
+# File: infra/k8s/charts/graph-engine/values.yaml
+#
+# Description:
+# Default configuration values for the graph-engine chart.
+#
+
+replicaCount: 1 # Graph algorithms can be stateful and heavy; start with one.
+
+image:
+  repository: 123456789012.dkr.ecr.us-east-1.amazonaws.com/graph-engine
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+# This service might not need an external port if it only consumes from and
+# publishes to a message bus, but we define one for health checks.
+service:
+  type: ClusterIP
+  port: 80
+
+# Graph computations can be CPU and memory intensive.
+resources:
+  limits:
+    cpu: "2"
+    memory: "2Gi"
+  requests:
+    cpu: "1"
+    memory: "1Gi"
+
+# Standard Helm chart boilerplate
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+podAnnotations: {}
+podSecurityContext: {}
+securityContext: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}
